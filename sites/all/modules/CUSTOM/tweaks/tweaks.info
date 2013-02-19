@@ -1,0 +1,6 @@
+name = Tweaks
+description = Ad Hoc hooks and functions for troubleshooting
+package = RWK Custom Modules
+core = 7.x
+
+files[] = tweaks.module

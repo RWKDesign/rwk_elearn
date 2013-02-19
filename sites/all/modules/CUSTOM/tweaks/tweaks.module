@@ -1,0 +1,89 @@
+<?php
+
+
+/*
+ *Implements hook_form_alter
+ *Adds a link/button at the end of a quiz which either directs the user to the next course object or back to the
+ *beginning of the quiz depending on whether or not they passed the quiz
+ */
+function tweaks_form_alter(&$form, &$form_state, $form_id) {
+	dpm($form_id);
+  if($form_id == 'quiz_report_form') {
+    global $user;
+    $uid = $user->uid;
+    global $base_url;
+    $context = course_get_context();
+    $course = course_get_course($context,$user);
+    $current = $course->getActive();
+    $id = $current->getId();
+    $inst_id = $current->getInstanceId();
+    $result = reset(quiz_get_score_data(array($inst_id), $user->uid));
+    $result_pass = FALSE;
+    if($result->percent_score >= $result->percent_pass) {
+      $result_pass = TRUE;
+    }
+
+    $course_nid = $current->getCourseNid();
+    $options = $current->getOptions();
+    //dpm($options);
+    //dpm($_SESSION);
+    $current->save();
+    $fulfillment = $current->getFulfillment();
+    $fulfillment->save();
+    $current_url = $current->getUrl();
+    $is_complete = $fulfillment->isComplete(); 
+    //dpm($is_complete);
+    $next = $course->getNext();
+    if($next) {
+      $next_title = $next->getTitle();
+      $next_url = $next->getUrl(); 
+      if($result_pass) {
+        $form['custom_submit'] = array(
+          '#markup' => '<div class="course-next-item"><a href="/' . $next_url . '">Advance To: ' . $next_title . ' -></a></div>',     
+        );  
+      } else {
+        $form['custom_submit'] = array(
+          '#markup' => '<div class="course-next-item"><a href="/' . $current_url . '"><- Retake this quiz</a></div>',     
+        );  
+      }  
+    } else {
+      $form['custom_submit'] = array(
+        '#markup' => '<div class="course-next-item"><a href="/node/' . $course_nid . '/course-complete">Next</a></div>',     
+      );  
+    }          
+  }
+
+}
+
+function tweaks_node_view($node, $view_mode, $langcode) {
+  global $user;
+  $context = course_get_context();
+  if($context) { 
+    if($node->type == 'video') {
+      $course = course_get_course($context,$user);
+      $current = $course->getActive();
+      $next = $course->getNext();
+      if($next) {
+        $next_title = $next->getTitle();
+        $next_url = $next->getUrl(); 
+        $node->content['next_link']['#markup'] = '<div class="course-next-item-video"><a href="/' . $next_url . '">Advance To: ' . $next_title . ' -></a></div';
+        $node->content['next_link']['#weight'] = 100;
+        //$node->content['#markup'] = '<div class="course-next-item"><a href="/vc/node/course-complete">Next</a></div>';
+        //dpm($node);
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

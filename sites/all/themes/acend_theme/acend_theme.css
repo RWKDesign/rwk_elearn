@@ -1,0 +1,107 @@
+
+
+
+
+/**
+ *Styling for the Admin Dashboard Page
+ */
+.view-course-report.courses-list #edit-date-completed-wrapper {
+  width: 100%;
+}
+
+.view-course-report.courses-list #edit-date-completed-wrapper .views-widget .form-item {
+  display: inline;
+  width: 30%;
+}
+
+.view-course-report.courses-list #edit-date-completed-wrapper .views-widget .form-item label {
+  display: inline;
+}
+
+.view-course-report.courses-list #edit-date-completed-wrapper .views-widget .form-item .form-text {
+  display: inline;
+  width: 30%;
+}
+
+
+
+
+
+
+
+/**
+ *Styling for the Course Nodes
+ */
+.course-nodes .center-wrapper {
+  display: inline-block;
+  width: 100%;
+  margin-top: 30px;
+  background-color: #F6F6F2;
+  padding-top: 20px;
+}
+
+.course-nodes .center-wrapper .course-node-outline {
+  padding-left: 30px;
+}
+
+.course-nodes .center-wrapper .course-node-dates {
+  padding-left: 30px;
+  margin-bottom: 15px;
+}
+
+.course-nodes .center-wrapper .course-node-dates .course-date-wrapper {
+  padding-left: 15px;
+}
+
+.course-nodes .course-node-free-course {
+  padding-left: 40px;
+}
+
+.course-nodes .course-node-free-course .course-free-link {
+  color: white;
+  margin-top: 15px;
+  background: #1A4070;
+  -webkit-box-shadow: 0px 1px 2px #939da2; -moz-box-shadow: 0px 1px 2px #939da2; box-shadow: 0px 1px 2px #939da2; 
+  border-radius: 15px 15px 15px 15px;
+  -moz-border-radius: 15px 15px 15px 15px;
+  padding: 7px 15px;
+  display: inline;
+}
+
+.course-nodes .course-node-free-course .course-free-link a {
+  color: white;
+}
+
+.course-nodes .course-node-free-course .pane-title {
+  margin-bottom: 15px;
+}
+
+.course-next-item {
+  color: white;
+  /*margin-top: 15px;*/
+  background: #1A4070;
+  -webkit-box-shadow: 0px 1px 2px #939da2; -moz-box-shadow: 0px 1px 2px #939da2; box-shadow: 0px 1px 2px #939da2; 
+  border-radius: 15px 15px 15px 15px;
+  -moz-border-radius: 15px 15px 15px 15px;
+  padding: 7px 15px;
+  display: inline-block;
+  margin-bottom: 20px;
+}
+
+.course-next-item-video {
+  color: white;
+  margin-top: 15px;
+  background: #1A4070;
+  -webkit-box-shadow: 0px 1px 2px #939da2; -moz-box-shadow: 0px 1px 2px #939da2; box-shadow: 0px 1px 2px #939da2; 
+  border-radius: 15px 15px 15px 15px;
+  -moz-border-radius: 15px 15px 15px 15px;
+  padding: 7px 15px;
+  display: inline-block;
+  float: right;
+}
+
+.course-next-item a,
+.course-next-item-video a
+{
+  color: white;
+}

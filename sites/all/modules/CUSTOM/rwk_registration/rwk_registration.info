@@ -1,0 +1,12 @@
+name = RWK Registration
+description = Registration process surrounding course objects and payment collection
+package = RWK Custom Modules
+core = 7.x
+configure = admin/config/system/paypal-config
+;dependencies
+dependencies[] = course
+dependencies[] = views
+;files
+files[] = includes/rwk_registration.admin.inc
+files[] = includes/rwk_registration.payment.inc
+

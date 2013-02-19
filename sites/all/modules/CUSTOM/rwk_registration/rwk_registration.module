@@ -1,0 +1,178 @@
+<?php 
+
+module_load_include('inc', 'rwk_registration', 'includes/rwk_registration.views');
+module_load_include('inc', 'rwk_registration', 'includes/rwk_registration.account');
+module_load_include('inc', 'rwk_registration', 'includes/rwk_registration.payment');
+
+/*
+* Implements hook_menu().
+*/
+function rwk_registration_menu() {
+  $items = array();
+
+  $items['admin/config/system/paypal-config'] = array(
+    'title' => 'Paypal Settings',
+    'description' => 'Configure PayPal connection settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('rwk_registration_admin'),
+    'access arguments' => array('access administration pages'),
+    //'type' => MENU_CALLBACK,
+    'file' => 'includes/rwk_registration.admin.inc',
+  );
+  
+  $items['payment-ipn'] = array(
+    'page callback' => 'paypal_process_transaction',
+    //'access arguments' => array('administer node'),
+    'type' => MENU_CALLBACK,
+    'file' => 'includes/rwk_registration.payment.inc',
+  );
+
+  return $items;
+}
+
+
+
+
+
+function rwk_registration_block_info(){
+  
+  $blocks['course_registration'] = array(
+    'info' => t('Course Registration'),
+    'cache' => DRUPAL_NO_CACHE
+  );
+  
+  $blocks['user_registration'] = array(
+    'info' => t('User Registration Payment'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+  
+  return $blocks;
+
+}
+
+function rwk_registration_block_view($delta=''){
+  $block = array();
+  
+  switch($delta){
+       
+    case 'course_registration' :             
+      
+      $content = rwk_registration_display(arg(1));
+      $block['subject'] = t('Course Registration');
+      $block['content'] = $content;     
+      break;  
+
+    case 'user_registration' :
+      $content = rwk_user_registration_display();
+      $block['subject'] = t('Subscription Status');
+      $block['content'] = $content; 
+      break;
+  }
+  return $block;
+  
+}
+
+//for testing purposes accept student id as parameter
+//for go live will use session variable of personId
+function rwk_registration_display($nid = null){
+    global $user;
+    $output = '';     
+  
+    if($nid != null){
+      $node = node_load($nid);  
+      dpm($node);
+      
+      $node_link = '/node/' . $nid . '/takecourse';
+      $start = $node->field_course_dates['und'][0]['value'];
+      $start_revised = date('l F j, Y', strtotime($start));
+      $end = $node->field_course_dates['und'][0]['value2'];
+      $end_revised = date('l F j, Y', strtotime($end));
+      
+      $registration_open = 0;
+      if(strtotime($start) <= time() && strtotime($end) >= time())
+          $registration_open = 1;
+          
+      if($registration_open==0 && strtotime($start) >= time()){
+        //registration is not yet open; start date not yet reached
+        $output.= '<span class="course-date-print">Registration is not yet open for this course<br><br>';
+        $output.= '<span class="course-date-print">The cost for this course is $' . $node->field_course_fee['und'][0]['value'] . '<br><br>';
+        $output.= 'Registration Begins: </span>' . $start_revised . '</span><br>';  
+      }elseif($registration_open==0 && strtotime($end) <= time()){
+        //registration is closed; end date has passed
+        $output.= '<span class="course-date-print">Registration for this course is currently unavailable.<br><br>';
+        $output.= 'Registration Ended: ' . $end_revised . '</span><br>'; 
+      }elseif(!$user->uid){
+        //registration is open but user is not logged in
+        $output.= '<span class="course-date-print">This course is open for registration through ' . $end_revised . '<br><br>';
+        $output.= '<span class="course-date-print">The cost for this course is $' . $node->field_course_fee['und'][0]['value'] . '<br><br>';
+        $output.= 'Please <a href="/user?destination=node/'.$nid.'">sign in</a> or <a href="/user/register?destination=node/'.$nid.'">register an account</a> to register for this course.</span>';
+      }else if(db_query("SELECT * FROM {course_enrollment} WHERE nid = :nid AND uid = :uid", array(':nid' => $nid, ':uid' => $user->uid))->fetch()){
+        //user is already enrolled in the course
+        drupal_set_message('You are currently enrolled in this course');
+        $output.= '<span class="course-date-print">You are enrolled in this course.<br><br>'; 
+        $output.= '<div class="course-free-link"><a href="/node/' . $nid . '/takecourse">Access Course Materials</a></div></span>';    
+      }else{
+        //registration open and used is logged in
+        //determine if course is free or for pay
+        if($node->field_course_type['und'][0]['value'] == 'free'){
+          
+          $output .= '<span class="course-date-print">This is a free course.<br><br>'; 
+          $output .= '<div class="course-free-link"><a href="' . $node_link . '">Enroll Now</a></div></span>';
+          
+        }elseif($node->field_course_type['und'][0]['value'] == 'paid'){
+          //paid course
+          $pp_hostname = '';
+          $business_email = '';
+          $domain = $_SERVER['HTTP_HOST'];
+          
+          //if(isset(variable_get('paypal_environment')))
+          $pp_hostname = variable_get('paypal_environment'); 
+            
+          //if(isset(variable_get('paypal_business_email')))
+          $business_email = variable_get('paypal_business_email', null);  
+      
+          $output .= '<span class="course-date-print">
+          <h5>Course Fee: $' . $node->field_course_fee['und'][0]['value'] . '</h5><br>
+  		  <form action="https://' . $pp_hostname . '/cgi-bin/webscr" method="post">
+
+			<!-- Identify your business so that you can collect the payments. -->
+			<input type="hidden" name="business" value="djanou_1354814897_biz@gmail.com">
+			<input type="hidden" name="business" value="'. $business_email .'">
+	
+			<!-- Internal page where all values will be posted to-->
+			<!-- http://acpe.megawan.com/checkout_completed?tx=9T3165212E543803G&st=Completed&amt=0.01&cc=USD&cm=&item_number=ACPE-Bell-Test -->
+			<input type="hidden" name="notify_url" value="http://' . $domain . '/payment-ipn"> 
+			<!-- <input type="hidden" name="notify_url" value="http://stage_vc.rwkdesign.com/payment-ipn"> -->
+
+			<!-- Specify a Buy Now button. -->
+			<input type="hidden" name="cmd" value="_xclick">
+
+			<!-- Specify details about the item that buyers will purchase. -->
+			<input type="hidden" name="item_name" value="' . $node->title . '">
+			<input type="hidden" name="amount" value="' . $node->field_course_fee['und'][0]['value'] . '">
+			<input type="hidden" name="currency_code" value="USD">
+
+    		<!-- Site specific values to store user and course associations -->
+    		<input type="hidden" name="on0" value="uid">
+    		<input type="hidden" name="os0" value="' . $user->uid . '">
+    		<input type="hidden" name="on1" value="nid">
+    		<input type="hidden" name="os1" value="' . $nid . '">
+
+			<!-- Display the payment button. -->
+			<input type="image" name="submit" border="0" src="https://www.paypalobjects.com/en_US/i/btn/btn_paynowCC_LG.gif"
+			alt="PayPal - The safer, easier way to pay online">
+			<img alt="" border="0" width="1" height="1" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" >
+
+  		</form>
+  		<br>
+  		<h5>If you have questions regarding<br>this service please <a href="" style="color:orange;">Contact Us</a></h5>
+  		</span>';
+        }
+      }
+      
+      $output .= 'Sample output for course registration block here!';
+      
+    }              
+    return $output;
+}
+
